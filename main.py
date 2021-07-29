@@ -14,6 +14,7 @@ bot = commands.Bot(command_prefix='!', case_insensitive = True, intents = intent
 bot_id = Config["bot-id"]
 ticket_role = Config["ticket-reader-role-name"]
 player_role_name = Config["role-to-assign-on-welcome"]
+log_channel_id = Config["log-channel-id"]
 
 
 @bot.command(name="welcome_msg")
@@ -33,11 +34,14 @@ async def welcome_msg(ctx):
 @bot.event
 async def on_ready():
     global welcome_channel
+    global log_channel
     await bot.wait_until_ready() # necessary for some idiotic reason 
     await bot.change_presence(activity=Game(name="The Official Divictus Bot."))
     welcome_channel = bot.get_channel(Config["welcome-channel-id"])
+    log_channel = bot.get_channel(log_channel_id)
     print('Logged on as {0}!'.format(bot.user))
     print('Welcome channel is {0}'.format(welcome_channel))
+    await logit("Bot started")
 
 
 
@@ -55,17 +59,25 @@ async def on_member_join(member):
     player_role = discord.utils.get(member.guild.roles, name=player_role_name)
     await member.add_roles(player_role)
 
+async def logit(message):
+    print("here")
+    await log_channel.send(message)
+
 @bot.command(name="kick")
 @discord.ext.commands.has_permissions(kick_members=True)
 async def kick(ctx, member: discord.Member, *args):
     print("Reason {}".format(" ".join(args)))
+    reason = " ".join(args)
     await member.kick(reason=" ".join(args))
+    await logit("{0} kicked {1} for Reason: {2}".format(ctx.message.author.name, member.name, reason))
 
 @bot.command(name="ban")
 @discord.ext.commands.has_permissions(ban_members=True)
 async def ban(ctx, member: discord.Member, *args):
     print("Reason {}".format(" ".join(args)))
-    await member.ban(reason=" ".join(args), delete_message_days ="7")
+    reason = " ".join(args)
+    await member.ban(reason=reason, delete_message_days ="7")
+    await logit("{0} banned {1} for Reason: {2}".format(ctx.message.author.name, member.name, reason))
     
 
 
@@ -89,6 +101,8 @@ async def ticket(ctx, *args):
         msg = await ctx.send(embed=embed)
         await msg.add_reaction(str(args[2]))
 
+        await logit("Ticket system started by {}".format(ctx.message.author.name))
+
         while True:
             reaction, user = await bot.wait_for('reaction_add', check=check)
             print(reaction, user, user.id)
@@ -100,12 +114,14 @@ async def ticket(ctx, *args):
                     await ticket_channel.set_permissions(ctx.guild.default_role, read_messages=False)
             await ticket_channel.set_permissions(user, read_messages=True) # add the opener of the ticket to the people who can see it
             await ticket_channel.send("**TO CLOSE TICKET USE:** *!ticketclose*")
+            await logit("Ticket opened by {}".format(user.name))
         
 
 @bot.command(name="ticketclose")
 async def ticket(ctx):
     if ctx.channel.name.startswith("ticket-"):
         await ctx.channel.delete()
+        await logit("Ticket {} closed by {}".format(ctx.channel.name, ctx.message.author.name))
     else:
         await ctx.send("**This is not a ticket.**")
 
@@ -128,6 +144,8 @@ async def poll(ctx, *args):
         args.pop(0) 
         for arg in args:
             await msg.add_reaction(str(arg))
+        
+        await logit("Poll started by {}".format(ctx.message.author.name))
 
 @bot.command(name="help")
 async def help(ctx):
@@ -149,5 +167,9 @@ async def on_command_error(ctx, error):
         await ctx.send("You don't have permissions to do that!")
     elif isinstance(error, discord.ext.commands.BotMissingPermissions):
         await ctx.send("The Bot doesn't have the permissions to do that!")
+    else:
+        print(error)
+
+
 
 bot.run(os.getenv('BOTTOKEN'))
