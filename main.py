@@ -113,11 +113,11 @@ async def ticket(ctx, *args):
                 if role.name != ticket_role:
                     await ticket_channel.set_permissions(ctx.guild.default_role, read_messages=False)
             await ticket_channel.set_permissions(user, read_messages=True) # add the opener of the ticket to the people who can see it
-            await ticket_channel.send("**TO CLOSE TICKET USE:** *!ticketclose*")
+            await ticket_channel.send("**TO CLOSE TICKET USE:** *!tclose*")
             await logit("Ticket opened by {}".format(user.name))
         
 
-@bot.command(name="ticketclose")
+@bot.command(name="tclose")
 async def ticket(ctx):
     if ctx.channel.name.startswith("ticket-"):
         await ctx.channel.delete()
@@ -154,7 +154,7 @@ async def help(ctx):
      color=discord.Colour(484085))
     embed.add_field(name="!help", value="This message", inline=True)
     embed.add_field(name="!ticket", value="Create a ticket system - !ticket \"<title>\" \"<descripion>\" <emoji>", inline=True)
-    embed.add_field(name="!ticketclose", value="Close a ticket", inline=True)
+    embed.add_field(name="!tclose", value="Close a ticket", inline=True)
     embed.add_field(name="!ban", value="Ban a user - !ban @someone <reason>", inline=True)
     embed.add_field(name="!kick", value="Kick a user - !kick @someone <reason>", inline=True)
     embed.add_field(name="!poll", value="Start a poll - !poll \"<title>\" \"<descripion>\" <emoji 1> <emoji 2> ...", inline=True)
